@@ -11,7 +11,7 @@ and does not share a database with Lockhaven.
 ## What ships
 
 - Official images: `quay.io/keycloak/keycloak:26.7.3` and `postgres:16-alpine`
-- Docker Compose project name `nms-idp` (isolated from any Lockhaven stack)
+- Docker Compose project name `nms-idp` (isolated from the Lockhaven stack)
 - Realm `nms` imported on first start
 - Confidential OIDC clients: `lockhaven` (Console) and `tickets` (placeholder)
 - TOTP enrollment on first login; WebAuthn available; no SCIM
@@ -32,7 +32,8 @@ cp .env.example .env
 ./scripts/up.sh
 ```
 
-Compose publishes Keycloak only on loopback:
+`scripts/up.sh` will create the edge network (`proxy` by default) if it is
+missing. Compose publishes Keycloak only on loopback:
 
 - Sign-in and admin: http://localhost:8080
 - Realm: `nms`
@@ -98,39 +99,54 @@ SAML can be added later on the same realm. SCIM is out of scope.
 
 ## DNS and TLS for auth.newmarketsecurity.com
 
-1. Create an A/AAAA record for `auth.newmarketsecurity.com` to the VPS that
-   will run **this** compose project.
+Do **not** start a second Caddy from this repo, and do **not** publish 80/443
+here. The Console host already terminates TLS. This stack joins that edge
+network and lets the existing watcher pick up labels.
+
+1. Create an A/AAAA record for `auth.newmarketsecurity.com` to the same VPS
+   that already serves Console/VPN.
 2. Copy `.env.example` to `.env` on the host. Set:
    - `KC_HOSTNAME=https://auth.newmarketsecurity.com`
    - `KC_HOSTNAME_STRICT=true`
    - `KC_HTTP_ENABLED=true`
    - `KC_PROXY_HEADERS=xforwarded`
+   - `KC_PUBLIC_HOST=auth.newmarketsecurity.com`
+   - `EDGE_NETWORK=proxy` (override only if the host uses another name)
    - `LOCKHAVEN_ROOT_URL` and redirect/origin lists to the real Console origin
-   - `ACME_EMAIL` to an operator address you control
 3. Suggested host layout (not `/opt/lockhaven`):
 
    ```text
    /opt/nms-idp/
      .env
      compose.yaml
-     compose.proxy.yaml
-     Caddyfile
      realm/
      scripts/
    ```
 
-4. Start with TLS:
+4. Start this project only:
 
    ```sh
-   docker compose -f compose.yaml -f compose.proxy.yaml up -d
+   docker compose up -d
    ```
 
-Caddy terminates HTTPS and proxies to Keycloak on the internal `nms-idp`
-network. Keycloak HTTP stays bound to `127.0.0.1` on the host.
+Keycloak HTTP stays bound to `127.0.0.1` on the host. It also joins the
+external Docker network `${EDGE_NETWORK:-proxy}` (Lockhaven’s `proxy`
+network) with labels for **caddy-docker-proxy** and **Traefik**:
 
-Do not attach this file to the Lockhaven Compose project. If you colocate on
-the same VPS, keep project name `nms-idp`, a separate directory, and a
-separate Docker network. Prefer a dedicated small VPS when you can.
+```text
+caddy=auth.newmarketsecurity.com
+caddy.reverse_proxy={{upstreams 8080}}
+traefik.enable=true
+traefik.docker.network=proxy
+traefik.http.routers.keycloak.rule=Host(`auth.newmarketsecurity.com`)
+traefik.http.routers.keycloak.entrypoints=websecure
+traefik.http.routers.keycloak.tls=true
+traefik.http.routers.keycloak.tls.certresolver=letsencrypt
+traefik.http.services.keycloak.loadbalancer.server.port=8080
+```
+
+Keep project name `nms-idp` and a separate directory from Lockhaven. Postgres
+stays on the private `nms-idp` network.
 
 ## MFA and operators
 
