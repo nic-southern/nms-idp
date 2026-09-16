@@ -1,8 +1,0 @@
-{
-	email {$ACME_EMAIL}
-}
-
-auth.newmarketsecurity.com {
-	encode gzip
-	reverse_proxy keycloak:8080
-}
