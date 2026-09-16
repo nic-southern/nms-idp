@@ -1,0 +1,23 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# rendered realm (client secrets injected from env)
+realm/generated/*
+!realm/generated/.gitignore
+
+# operator exports (may contain users)
+realm/exported/
+backups/
+
+# tls material
+*.pem
+*.p12
+*.pfx
+*.key
+*.crt
+
+# local state
+data/
+.DS_Store

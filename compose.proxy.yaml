@@ -1,0 +1,28 @@
+# TLS terminator for auth.newmarketsecurity.com.
+# Usage: docker compose -f compose.yaml -f compose.proxy.yaml up -d
+#
+# Keycloak stays on the internal network (published only on 127.0.0.1).
+# Do not merge this file into the Lockhaven compose project.
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - nms-idp
+
+volumes:
+  caddy_data:
+  caddy_config:

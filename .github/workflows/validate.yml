@@ -1,0 +1,36 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  realm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Render and validate realm
+        env:
+          LOCKHAVEN_CLIENT_SECRET: ci-lockhaven-not-a-real-secret
+          TICKETS_CLIENT_SECRET: ci-tickets-not-a-real-secret
+          LOCKHAVEN_REDIRECT_URIS: http://localhost:3000/api/auth/oauth2/callback/lockhaven
+          LOCKHAVEN_WEB_ORIGINS: http://localhost:3000
+          TICKETS_REDIRECT_URIS: http://localhost:4000/api/auth/oauth2/callback/tickets
+          TICKETS_WEB_ORIGINS: http://localhost:4000
+        run: |
+          python3 scripts/render-realm.py
+          python3 scripts/validate-realm.py
+      - name: Template must not contain live secrets
+        run: |
+          if grep -RInE 'BEGIN (RSA |OPENSSH )?PRIVATE KEY' realm README.md compose.yaml; then
+            echo "refusing private key material" >&2
+            exit 1
+          fi
+          if grep -RInE 'postgres://[^:]+:[^@]+@' .; then
+            echo "refusing inline database URLs with passwords" >&2
+            exit 1
+          fi
