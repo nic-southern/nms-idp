@@ -155,6 +155,14 @@ OIDC paths (`/realms/nms/...`) are unchanged. Master admin is still at
 Keep project name `nms-idp` and a separate directory from Lockhaven. Postgres
 stays on the private `nms-idp` network.
 
+## Mail
+
+Password reset and verify-email use SMTP on the live realm (not in git).
+Set `KC_SMTP_*` in the host `.env`. This droplet cannot reach Resend on
+465/587; use `smtp.resend.com:2587` with STARTTLS. From-address
+`noreply@newmarketsecurity.com`. Apply with kcadm against realm `nms`
+(first import will not overwrite a running realm).
+
 ## MFA and operators
 
 - New `nms` users are asked to enroll a passwordless passkey on first sign-in.
