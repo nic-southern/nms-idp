@@ -30,7 +30,8 @@ jobs:
             echo "refusing private key material" >&2
             exit 1
           fi
-          if grep -RInE 'postgres://[^:]+:[^@]+@' .; then
+          # Search product files only. Grepping "." matches this workflow's own pattern.
+          if git grep -nE 'postgres://[^:]+:[^@]+@' -- ':!.github'; then
             echo "refusing inline database URLs with passwords" >&2
             exit 1
           fi
