@@ -28,6 +28,18 @@
   "otpPolicyLookAheadWindow": 1,
   "otpPolicyPeriod": 30,
   "otpSupportedApplications": ["totpAppFreeOTPName", "totpAppGoogleName"],
+  "webAuthnPolicyPasswordlessRpEntityName": "New Market Security",
+  "webAuthnPolicyPasswordlessRpId": "auth.newmarketsecurity.com",
+  "webAuthnPolicyPasswordlessSignatureAlgorithms": ["ES256", "RS256"],
+  "webAuthnPolicyPasswordlessAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyPasswordlessAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyPasswordlessRequireResidentKey": "Yes",
+  "webAuthnPolicyPasswordlessResidentKey": "required",
+  "webAuthnPolicyPasswordlessUserVerificationRequirement": "required",
+  "webAuthnPolicyPasswordlessCreateTimeout": 0,
+  "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": true,
+  "webAuthnPolicyPasswordlessPasskeysEnabled": true,
+  "webAuthnPolicyPasswordlessMediation": "optional",
   "browserFlow": "browser",
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
@@ -229,12 +241,21 @@
   ],
   "requiredActions": [
     {
+      "alias": "webauthn-register-passwordless",
+      "name": "Webauthn Register Passwordless",
+      "providerId": "webauthn-register-passwordless",
+      "enabled": true,
+      "defaultAction": true,
+      "priority": 10,
+      "config": {}
+    },
+    {
       "alias": "CONFIGURE_TOTP",
       "name": "Configure OTP",
       "providerId": "CONFIGURE_TOTP",
       "enabled": true,
-      "defaultAction": true,
-      "priority": 10,
+      "defaultAction": false,
+      "priority": 15,
       "config": {}
     },
     {

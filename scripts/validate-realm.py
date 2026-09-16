@@ -57,12 +57,29 @@ def assert_mfa(realm: dict) -> None:
     actions = {a.get("alias"): a for a in realm.get("requiredActions", [])}
     totp = actions.get("CONFIGURE_TOTP")
     if not totp or not totp.get("enabled"):
-        raise SystemExit("CONFIGURE_TOTP must be enabled")
-    if not totp.get("defaultAction"):
-        raise SystemExit("CONFIGURE_TOTP should be a default action so new users enroll MFA")
+        raise SystemExit("CONFIGURE_TOTP must be enabled as an optional backup")
+    if totp.get("defaultAction"):
+        raise SystemExit("CONFIGURE_TOTP must not be default; passkeys are first-class sign-in")
     webauthn = actions.get("webauthn-register")
     if not webauthn or not webauthn.get("enabled"):
         raise SystemExit("webauthn-register must be enabled (optional, not default)")
+    if webauthn.get("defaultAction"):
+        raise SystemExit("webauthn-register is 2FA WebAuthn; do not make it default")
+    passkey = actions.get("webauthn-register-passwordless")
+    if not passkey or not passkey.get("enabled"):
+        raise SystemExit("webauthn-register-passwordless must be enabled")
+    if not passkey.get("defaultAction"):
+        raise SystemExit("webauthn-register-passwordless must be default so new users enroll a passkey")
+    if realm.get("webAuthnPolicyPasswordlessPasskeysEnabled") is not True:
+        raise SystemExit("passwordless passkeys must be enabled on the login screen")
+    if realm.get("webAuthnPolicyPasswordlessUserVerificationRequirement") != "required":
+        raise SystemExit("passwordless passkeys must require user verification")
+    if realm.get("webAuthnPolicyPasswordlessResidentKey") != "required":
+        raise SystemExit("passwordless passkeys must require a discoverable credential")
+    if realm.get("webAuthnPolicyPasswordlessMediation") != "optional":
+        raise SystemExit("passkey mediation must be optional so the picker is first-class")
+    if realm.get("webAuthnPolicyPasswordlessRpId") != "auth.newmarketsecurity.com":
+        raise SystemExit("passwordless RP ID must be auth.newmarketsecurity.com")
 
 
 def assert_no_users(realm: dict) -> None:

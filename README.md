@@ -14,7 +14,7 @@ and does not share a database with Lockhaven.
 - Docker Compose project name `nms-idp` (isolated from the Lockhaven stack)
 - Realm `nms` imported on first start
 - Confidential OIDC clients: `lockhaven` (Console) and `tickets` (placeholder)
-- TOTP enrollment on first login; WebAuthn available; no SCIM
+- Passwordless passkeys as first-class sign-in; TOTP optional; no SCIM
 
 Secrets stay in `.env`. Client secrets are injected into a gitignored realm file
 at start. Do not commit `.env`, generated realm JSON, or realm exports.
@@ -157,9 +157,10 @@ stays on the private `nms-idp` network.
 
 ## MFA and operators
 
-- New `nms` users are asked to enroll TOTP on first sign-in.
-- WebAuthn is enabled as an optional action; turn it into a default in the
-  admin console if you want passkeys for everyone.
+- New `nms` users are asked to enroll a passwordless passkey on first sign-in.
+- The login page offers passkeys first (picker on load, plus Sign in with
+  Passkey). Password + optional TOTP remain as fallback.
+- TOTP and 2FA WebAuthn stay available; they are not default required actions.
 - There is no user directory sync (no SCIM). Offboard by disabling the user
   in this realm, then remove any local Console link by hand.
 
