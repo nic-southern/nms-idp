@@ -3,7 +3,7 @@
 Company identity for **New Market Security**. This repository runs Keycloak
 with Postgres so Console, tickets, and later tools share one login.
 
-Public hostname: `auth.newmarketsecurity.com`
+Public hostname: `auth.newmarketsecurity.com` (edge proxy sends `/` and `/admin` to realm `nms`; master remains at `/admin/master/console/`)
 
 This is infrastructure only. It is not part of the Lockhaven application repo
 and does not share a database with Lockhaven.
@@ -35,8 +35,9 @@ cp .env.example .env
 `scripts/up.sh` will create the edge network (`proxy` by default) if it is
 missing. Compose publishes Keycloak only on loopback:
 
-- Sign-in and admin: http://localhost:8080
+- Sign-in and admin: http://localhost:8080 (loopback still lands on master; the edge proxy is what defaults to `nms`)
 - Realm: `nms`
+- nms admin (via proxy): `https://auth.newmarketsecurity.com/admin/nms/console/`
 - Issuer: http://localhost:8080/realms/nms
 - Discovery: http://localhost:8080/realms/nms/.well-known/openid-configuration
 - Health: http://localhost:9000/health/ready
@@ -111,6 +112,7 @@ network and lets the existing watcher pick up labels.
    - `KC_HTTP_ENABLED=true`
    - `KC_PROXY_HEADERS=xforwarded`
    - `KC_PUBLIC_HOST=auth.newmarketsecurity.com`
+   - `KC_DEFAULT_REALM=nms` (optional; `/` and `/admin` redirect here)
    - `EDGE_NETWORK=proxy` (override only if the host uses another name)
    - `LOCKHAVEN_ROOT_URL` and redirect/origin lists to the real Console origin
 3. Suggested host layout (not `/opt/lockhaven`):
@@ -135,6 +137,7 @@ network) with labels for **caddy-docker-proxy** and **Traefik**:
 
 ```text
 caddy=auth.newmarketsecurity.com
+caddy.redir / and /admin → /admin/nms/console/
 caddy.reverse_proxy={{upstreams 8080}}
 traefik.enable=true
 traefik.docker.network=proxy
@@ -143,7 +146,11 @@ traefik.http.routers.keycloak.entrypoints=websecure
 traefik.http.routers.keycloak.tls=true
 traefik.http.routers.keycloak.tls.certresolver=letsencrypt
 traefik.http.services.keycloak.loadbalancer.server.port=8080
+traefik.http.routers.keycloak-default-realm → /admin/nms/console/
 ```
+
+OIDC paths (`/realms/nms/...`) are unchanged. Master admin is still at
+`/admin/master/console/`.
 
 Keep project name `nms-idp` and a separate directory from Lockhaven. Postgres
 stays on the private `nms-idp` network.
