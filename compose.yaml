@@ -56,6 +56,9 @@ services:
       - "127.0.0.1:9000:9000"
     labels:
       - caddy=${KC_PUBLIC_HOST:-auth.newmarketsecurity.com}
+      - caddy.redir.0=/ /admin/${KC_DEFAULT_REALM:-nms}/console/ 302
+      - caddy.redir.1=/admin /admin/${KC_DEFAULT_REALM:-nms}/console/ 302
+      - caddy.redir.2=/admin/ /admin/${KC_DEFAULT_REALM:-nms}/console/ 302
       - caddy.reverse_proxy={{upstreams 8080}}
       - traefik.enable=true
       - traefik.docker.network=${EDGE_NETWORK:-proxy}
@@ -64,6 +67,16 @@ services:
       - traefik.http.routers.keycloak.tls=true
       - traefik.http.routers.keycloak.tls.certresolver=letsencrypt
       - traefik.http.services.keycloak.loadbalancer.server.port=8080
+      - traefik.http.middlewares.kc-default-nms.redirectregex.regex=^https://([^/]+)(|/|/admin|/admin/)$$
+      - traefik.http.middlewares.kc-default-nms.redirectregex.replacement=https://$${1}/admin/${KC_DEFAULT_REALM:-nms}/console/
+      - traefik.http.middlewares.kc-default-nms.redirectregex.permanent=false
+      - traefik.http.routers.keycloak-default-realm.rule=Host(`${KC_PUBLIC_HOST:-auth.newmarketsecurity.com}`) && (Path(`/`) || Path(`/admin`) || Path(`/admin/`))
+      - traefik.http.routers.keycloak-default-realm.priority=100
+      - traefik.http.routers.keycloak-default-realm.entrypoints=websecure
+      - traefik.http.routers.keycloak-default-realm.tls=true
+      - traefik.http.routers.keycloak-default-realm.tls.certresolver=letsencrypt
+      - traefik.http.routers.keycloak-default-realm.middlewares=kc-default-nms
+      - traefik.http.routers.keycloak-default-realm.service=keycloak
     depends_on:
       postgres:
         condition: service_healthy
